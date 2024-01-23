@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Draggable, Droppable } from "react-beautiful-dnd";
+import { Draggable, Droppable, DragDropContext } from "react-beautiful-dnd";
+import { DUMMY_DATA } from "../DUMMY_DATA";
 
 const AccordionItem = ({ item, index, onToggle, isOpen, subItems, depth }) => {
   const handleToggle = () => {
@@ -7,7 +8,11 @@ const AccordionItem = ({ item, index, onToggle, isOpen, subItems, depth }) => {
   };
 
   return (
-    <Draggable draggableId={item.id.toString()} index={index}>
+    <Draggable
+      key={item.id.toString()}
+      draggableId={item.id.toString()}
+      index={index}
+    >
       {(provided) => (
         <div
           className={`accordion-test-item depth-${depth}`}
@@ -48,36 +53,61 @@ const AccordionItem = ({ item, index, onToggle, isOpen, subItems, depth }) => {
   );
 };
 
-const NestedAccordion = ({ data }) => {
+const NestedAccordion = () => {
+  const [data, setData] = useState(DUMMY_DATA);
   const [openItem, setOpenItem] = useState(null);
 
   const handleToggle = (itemId) => {
     setOpenItem((prevOpenItem) => (prevOpenItem === itemId ? null : itemId));
   };
 
+  const onDragEnd = (result) => {
+    // Reorder logic
+    if (!result.destination) {
+      return;
+    }
+
+    console.log({ result });
+
+    const reorderedData = Array.from(data);
+    const [removed] = reorderedData.splice(result.source.index, 1);
+    reorderedData.splice(result.destination.index, 0, removed);
+    console.log({ reorderedData });
+    // Update the state or send the updated data to the server
+    // setState(reorderedData);
+  };
+
   return (
-    <Droppable droppableId="nested-accordion" type="root" direction="vertical">
-      {(provided) => (
-        <div
-          {...provided.droppableProps}
-          ref={provided.innerRef}
-          className="accordion"
-        >
-          {data.map((item, index) => (
-            <AccordionItem
-              key={item.id}
-              item={item}
-              index={index}
-              onToggle={handleToggle}
-              isOpen={openItem === item.id}
-              subItems={data.filter((subItem) => subItem.parentId === item.id)}
-              depth={1}
-            />
-          ))}
-          {provided.placeholder}
-        </div>
-      )}
-    </Droppable>
+    <DragDropContext onDragEnd={onDragEnd}>
+      <Droppable
+        droppableId="nested-accordion"
+        type="root"
+        direction="vertical"
+      >
+        {(provided) => (
+          <div
+            {...provided.droppableProps}
+            ref={provided.innerRef}
+            className="accordion"
+          >
+            {data.map((item, index) => (
+              <AccordionItem
+                key={item.id}
+                item={item}
+                index={index}
+                onToggle={handleToggle}
+                isOpen={openItem === item.id}
+                subItems={data.filter(
+                  (subItem) => subItem.parentId === item.id
+                )}
+                depth={1}
+              />
+            ))}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
+    </DragDropContext>
   );
 };
 
